@@ -44,7 +44,7 @@ dependencies {
     implementation("info.cqframework:cql-to-elm:1.5.4")
     implementation("org.opencds.cqf.cql:engine:1.5.2")
 
-    implementation("fr.phast:phast-fhir-kt:0.0.2-SNAPSHOT")
+    implementation("fr.phast:phast-fhir-kt:0.0.3-SNAPSHOT")
     implementation("fr.phast:cql-engine-fhir:0.0.3-SNAPSHOT")
 }
 
