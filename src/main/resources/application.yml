@@ -1,0 +1,10 @@
+server:
+  port: 8080
+  error:
+    include-binding-errors: always
+    include-message: always
+    include-stacktrace: on_param
+    include-exception: true
+spring:
+  jackson:
+    default-property-inclusion: non_null
