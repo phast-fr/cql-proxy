@@ -7,7 +7,7 @@ ENV TZ=Europe/Paris
 RUN apk --no-cache add curl jq
 ADD build/libs/cql-proxy-0.0.1-SNAPSHOT.jar /home/phast/target/
 
-EXPOSE 8443
+EXPOSE 8080
 
 #run the spring boot application
 ENTRYPOINT ["java","-Djava.security.egd=file:/dev/./urandom","-Dserver.port=8080","-jar","/home/phast/target/cql-proxy-0.0.1-SNAPSHOT.jar"]
