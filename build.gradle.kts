@@ -4,7 +4,7 @@ val ossrhUsername: String by project
 val ossrhPassword: String by project
 
 plugins {
-    id("org.springframework.boot") version "2.5.5"
+    id("org.springframework.boot") version "2.5.6"
     id("io.spring.dependency-management") version "1.0.11.RELEASE"
     kotlin("jvm") version "1.5.31"
     kotlin("plugin.spring") version "1.5.31"
@@ -31,15 +31,15 @@ repositories {
 }
 
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-web:2.5.5")
+    implementation("org.springframework.boot:spring-boot-starter-web:2.5.6")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.0")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor:2.5.5")
-    testImplementation("org.springframework.boot:spring-boot-starter-test:2.5.5")
+    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor:2.5.6")
+    testImplementation("org.springframework.boot:spring-boot-starter-test:2.5.6")
 
-    implementation("org.springframework.boot:spring-boot-starter-actuator:2.5.5")
-    implementation("org.springframework.boot:spring-boot-starter-webflux:2.5.5")
+    implementation("org.springframework.boot:spring-boot-starter-actuator:2.5.6")
+    implementation("org.springframework.boot:spring-boot-starter-webflux:2.5.6")
 
     implementation("info.cqframework:cql-to-elm:1.5.4")
     implementation("org.opencds.cqf.cql:engine:1.5.2")
@@ -86,7 +86,7 @@ publishing {
                 name.set(rootProject.name)
                 packaging = "jar"
                 description.set(project.description)
-                url.set("https://github.com/phast-fr/TODO")
+                url.set("https://github.com/phast-fr/cql-proxy")
                 licenses {
                     license {
                         name.set("MIT License")
@@ -102,9 +102,9 @@ publishing {
                     }
                 }
                 scm {
-                    connection.set("scm:git:https://github.com/phast-fr/TODO.git")
-                    developerConnection.set("scm:git:https://github.com/phast-fr/TODO.git")
-                    url.set("https://github.com/phast-fr/TODO.git")
+                    connection.set("scm:git:https://github.com/phast-fr/cql-proxy.git")
+                    developerConnection.set("scm:git:https://github.com/phast-fr/cql-proxy.git")
+                    url.set("https://github.com/phast-fr/cql-proxy.git")
                 }
             }
         }
