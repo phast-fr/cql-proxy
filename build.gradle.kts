@@ -31,21 +31,22 @@ repositories {
 }
 
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-web:2.5.6")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.0")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor:2.5.6")
-    testImplementation("org.springframework.boot:spring-boot-starter-test:2.5.6")
+    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 
-    implementation("org.springframework.boot:spring-boot-starter-actuator:2.5.6")
-    implementation("org.springframework.boot:spring-boot-starter-webflux:2.5.6")
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
 
     implementation("info.cqframework:cql-to-elm:1.5.4")
     implementation("org.opencds.cqf.cql:engine:1.5.2")
 
-    implementation("fr.phast:phast-fhir-kt:0.0.3-SNAPSHOT")
-    implementation("fr.phast:cql-engine-fhir:0.0.4-SNAPSHOT")
+    implementation("fr.phast:phast-fhir-kt:0.0.10-SNAPSHOT")
+    implementation("fr.phast:cql-engine-fhir:0.0.5-SNAPSHOT")
+    implementation("fr.phast:cql-services:0.0.10-SNAPSHOT")
 }
 
 tasks.withType<KotlinCompile> {

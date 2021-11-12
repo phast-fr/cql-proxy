@@ -28,6 +28,8 @@ import fr.phast.cql.engine.fhir.helper.FHIRHelpers
 import fr.phast.cql.engine.fhir.model.R4FhirModelResolver
 import fr.phast.cql.engine.fhir.retrieve.R4FhirRetrieveProvider
 import fr.phast.cql.engine.fhir.terminology.R4FhirTerminologyProvider
+import fr.phast.cql.services.providers.EvaluationProviderFactory
+import org.hl7.fhir.r4.model.Endpoint
 import org.opencds.cqf.cql.engine.data.CompositeDataProvider
 import org.opencds.cqf.cql.engine.data.DataProvider
 import org.opencds.cqf.cql.engine.data.ExternalFunctionProvider
@@ -60,6 +62,15 @@ class ProviderFactory: EvaluationProviderFactory {
         )
     }
 
+    override fun createDataProvider(
+        model: String,
+        version: String,
+        endpoint: Endpoint,
+        terminologyProvider: TerminologyProvider
+    ): DataProvider {
+        TODO("Not yet implemented")
+    }
+
     override fun createTerminologyProvider(
         model: String, version: String, uri: String, credential: String?
     ): TerminologyProvider {
@@ -76,6 +87,10 @@ class ProviderFactory: EvaluationProviderFactory {
                 version
             )
         )
+    }
+
+    override fun createTerminologyProvider(model: String, version: String, endpoint: Endpoint): TerminologyProvider {
+        TODO("Not yet implemented")
     }
 
     override fun createExternalFunctionProvider(): ExternalFunctionProvider {

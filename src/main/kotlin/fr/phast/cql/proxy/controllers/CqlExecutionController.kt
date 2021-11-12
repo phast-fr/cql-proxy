@@ -24,13 +24,13 @@
 
 package fr.phast.cql.proxy.controllers
 
-import fr.phast.cql.proxy.helpers.LibraryHelper
-import fr.phast.cql.proxy.helpers.TranslatorHelper
-import fr.phast.cql.proxy.helpers.TranslatorHelper.getTranslator
-import fr.phast.cql.proxy.helpers.UsingHelper
-import fr.phast.cql.proxy.providers.EvaluationProviderFactory
-import fr.phast.cql.proxy.providers.LibraryResourceProvider
-import org.apache.commons.lang3.tuple.Triple
+import fr.phast.cql.services.LibraryService
+import fr.phast.cql.services.decorators.CacheAwareLibraryLoaderDecorator
+import fr.phast.cql.services.helpers.TranslatorHelper
+import fr.phast.cql.services.helpers.TranslatorHelper.getTranslator
+import fr.phast.cql.services.helpers.UsingHelper
+import fr.phast.cql.services.providers.EvaluationProviderFactory
+import fr.phast.cql.services.providers.LibraryResourceProvider
 import org.cqframework.cql.cql2elm.CqlTranslator
 import org.cqframework.cql.elm.execution.FunctionDef
 import org.cqframework.cql.elm.execution.VersionedIdentifier
@@ -48,11 +48,210 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/r4/fhir")
 class CqlExecutionController(
+    private val libraryService: LibraryService,
     private val providerFactory: EvaluationProviderFactory
 ): HealthIndicator {
 
     override fun health(): Health {
         return Health.up().build()
+    }
+
+    // TODO change for https://build.fhir.org/ig/HL7/cqf-recommendations/OperationDefinition-cpg-library-evaluate.html
+    @PostMapping("Library/\$evaluate")
+    fun doPostEvaluate(@RequestBody parameters: Parameters): Parameters {
+        val out = Parameters()
+
+        val subject = parameters.getValue<StringType>("subject")
+        val expression = parameters.getValue<StringType>("expression")
+        val useServerData = parameters.getValue<BooleanType>("useServerData")
+        val dataEndpoint = parameters.getValue<Endpoint>("dataEndpoint")
+        val contentEndpoint = parameters.getValue<Endpoint>("contentEndpoint")
+        val terminologyEndpoint = parameters.getValue<Endpoint>("terminologyEndpoint")
+
+        if (expression != null
+            && contentEndpoint != null
+            && terminologyEndpoint != null
+            && dataEndpoint != null) {
+            val libraryResolutionProvider = LibraryResourceProvider(
+                contentEndpoint,
+                Library::class.java
+            )
+
+            val translator: CqlTranslator?
+            val libraryLoader = libraryService.createLibraryLoader(libraryResolutionProvider) as CacheAwareLibraryLoaderDecorator
+            try {
+                translator = getTranslator(
+                    expression.value, libraryLoader.getLibraryManager(), libraryLoader.getLibraryManager().modelManager
+                )
+                if (translator.errors.isNotEmpty()) {
+                    val parametersParameter = mutableListOf<ParametersParameter>()
+                    translator.errors.forEach { cte ->
+                        val tb = cte.locator
+                        if (tb != null) {
+                            val location = String.format("[%d:%d]", tb.startLine, tb.startChar)
+                            parametersParameter.add(ParametersParameter(StringType("location")).also {
+                                it.valueString = StringType(location)
+                            })
+                        }
+                        out.id = IdType("Error")
+                        parametersParameter.add(ParametersParameter(StringType("error")).also {
+                            it.valueString = cte.message?.let { message ->
+                                StringType(message)
+                            }
+                        })
+                    }
+                    return out.also { outParameters ->
+                        outParameters.parameter = parametersParameter
+                    }
+                }
+            }
+            catch (e: IllegalArgumentException ) {
+                val parametersParameter = mutableListOf<ParametersParameter>()
+                out.id = IdType("Error")
+                parametersParameter.add(ParametersParameter(StringType("error")).also {
+                    it.valueString = e.message?.let { message ->
+                        StringType(message)
+                    }
+                })
+                return out.also { outParameters ->
+                    outParameters.parameter = parametersParameter
+                }
+            }
+
+            val library = TranslatorHelper.translateLibrary(translator)
+            val context = Context(library)
+            context.registerLibraryLoader(libraryLoader)
+
+            val usingDefs = UsingHelper.getUsingUrlAndVersion(library.usings)
+
+            require(usingDefs.size <= 1)
+            { "Evaluation of Measure using multiple Models is not supported at this time." }
+
+            // If there are no Usings, there is probably not any place the Terminology
+            // actually used so I think the assumption that at least one provider exists is
+            // ok.
+            val terminologyProvider = if (usingDefs.isNotEmpty()) {
+                // Creates a terminology provider based on the first using statement. This
+                // assumes the terminology
+                // server matches the FHIR version of the CQL.
+                this.providerFactory.createTerminologyProvider(
+                    usingDefs[0].left,
+                    usingDefs[0].middle,
+                    terminologyEndpoint
+                ).also { terminologyProvider ->
+                    context.registerTerminologyProvider(terminologyProvider)
+                }
+            }
+            else {
+                null
+            }
+
+            usingDefs.forEach { def ->
+                terminologyProvider?.let { terminologyProvider ->
+                    providerFactory.createDataProvider(
+                        def.left!!, def.middle!!,
+                        dataEndpoint,
+                        terminologyProvider
+                    ).also { dataProvider -> context.registerDataProvider(def.right, dataProvider) }
+                }
+            }
+
+            val identifier = VersionedIdentifier()
+            identifier.id = "FHIRHelpers"
+            identifier.version = "4.0.1"
+            context.registerExternalFunctionProvider(
+                identifier, providerFactory.createExternalFunctionProvider()
+            )
+
+            context.setExpressionCaching(true)
+            if (library.statements != null) {
+                val parametersParameter = mutableListOf<ParametersParameter>()
+                library.statements.def.forEach { def ->
+                    context.enterContext(def.context)
+                    if (subject != null && subject.value.isNotEmpty()) {
+                        context.setContextValue(context.currentContext, subject)
+                    }
+                    else {
+                        context.setContextValue(context.currentContext, "null")
+                    }
+
+                    try {
+                        if (def is FunctionDef) {
+                            return@forEach
+                        }
+                        val res = def.expression.evaluate(context)
+                        if (res == null) {
+                            parametersParameter.add(ParametersParameter(StringType(def.name)).also {
+                                it.valueString = StringType("null")
+                            })
+                        }
+                        else if (res is List<*>) {
+                            if (res.isNotEmpty() && res[0] is Resource) {
+                                parametersParameter.add(ParametersParameter(StringType(def.name)).also {
+                                    it.resource = Bundle(BundleType.COLLECTION).also { bundle ->
+                                        val entries = mutableListOf<BundleEntry>()
+                                        (res as Iterable<*>).forEach { resource ->
+                                            entries.add(BundleEntry().also { entry ->
+                                                if (resource is Resource) {
+                                                    entry.resource = resource
+                                                    // TODO add resourceType
+                                                    entry.fullUrl = resource.id?.let { resourceId -> UriType(resourceId.value) }
+                                                }
+                                            })
+                                        }
+                                        bundle.total = UnsignedIntType(entries.size)
+                                        bundle.entry = entries
+                                    }
+                                })
+                            }
+                            else {
+                                parametersParameter.add(ParametersParameter(StringType(def.name)).also {
+                                    it.valueString = StringType(res.toString())
+                                })
+                            }
+                        }
+                        else if (res is Iterable<*>) {
+                            parametersParameter.add(ParametersParameter(StringType(def.name)).also {
+                                it.resource = Bundle(BundleType.COLLECTION).also { bundle ->
+                                    val entries = mutableListOf<BundleEntry>()
+                                    res.forEach { resource ->
+                                        entries.add(BundleEntry().also { entry ->
+                                            if (resource is Resource) {
+                                                entry.resource = resource
+                                                // TODO add resourceType
+                                                entry.fullUrl = resource.id?.let { resourceId -> UriType(resourceId.value) }
+                                            }
+                                        })
+                                    }
+                                    bundle.total = UnsignedIntType(entries.size)
+                                    bundle.entry = entries
+                                }
+                            })
+                        }
+                        else if (res is Resource) {
+                            parametersParameter.add(ParametersParameter(StringType(def.name)).also {
+                                it.resource = res
+                            })
+                        }
+                        else {
+                            parametersParameter.add(ParametersParameter(StringType(def.name)).also {
+                                it.valueString = StringType(res.toString())
+                            })
+                        }
+                    }
+                    catch (re: RuntimeException) {
+                        re.printStackTrace()
+                        val message = if (re.message != null) re.message!! else re.javaClass.name
+                        parametersParameter.add(ParametersParameter(StringType(def.name)).also {
+                            it.valueString = StringType(message)
+                        })
+                    }
+                }
+
+                out.parameter = parametersParameter
+            }
+        }
+        return out
     }
 
     @PostMapping("\$cql")
@@ -105,13 +304,13 @@ class CqlExecutionController(
                 libraryCredential?.value
             )
             val translator: CqlTranslator?
-            val libraryLoader = LibraryHelper.createLibraryLoader(libraryResolutionProvider)
+            val libraryLoader = libraryService.createLibraryLoader(libraryResolutionProvider) as CacheAwareLibraryLoaderDecorator
 
             val results = mutableListOf<BundleEntry>()
 
             try {
                 translator = getTranslator(
-                    code.value, libraryLoader.getLibraryManager(), libraryLoader.getModelManager()
+                    code.value, libraryLoader.getLibraryManager(), libraryLoader.getLibraryManager().modelManager
                 )
                 if (translator.errors.isNotEmpty()) {
                     translator.errors.forEach { cte ->
@@ -120,13 +319,13 @@ class CqlExecutionController(
                         val tb = cte.locator
                         if (tb != null) {
                             val location = String.format("[%d:%d]", tb.startLine, tb.startChar)
-                            parametersParameter.add(ParametersParameter(StringType("location")).also { parametersParameter ->
-                                parametersParameter.valueString = StringType(location)
+                            parametersParameter.add(ParametersParameter(StringType("location")).also {
+                                it.valueString = StringType(location)
                             })
                         }
                         result.id = IdType("Error")
-                        parametersParameter.add(ParametersParameter(StringType("error")).also { parametersParameter ->
-                            parametersParameter.valueString = cte.message?.let { message ->
+                        parametersParameter.add(ParametersParameter(StringType("error")).also {
+                            it.valueString = cte.message?.let { message ->
                                 StringType(message)
                             }
                         })
@@ -146,8 +345,8 @@ class CqlExecutionController(
                 val result = Parameters()
                 val parametersParameter = mutableListOf<ParametersParameter>()
                 result.id = IdType("Error")
-                parametersParameter.add(ParametersParameter(StringType("error")).also { parametersParameter ->
-                    parametersParameter.valueString = e.message?.let { message ->
+                parametersParameter.add(ParametersParameter(StringType("error")).also {
+                    it.valueString = e.message?.let { message ->
                         StringType(message)
                     }
                 })
@@ -165,11 +364,11 @@ class CqlExecutionController(
 
             val locations = getLocations(translator.translatedLibrary.library)
 
-            val library: org.cqframework.cql.elm.execution.Library = TranslatorHelper.translateLibrary(translator)
+            val library = TranslatorHelper.translateLibrary(translator)
             val context = Context(library)
             context.registerLibraryLoader(libraryLoader)
 
-            val usingDefs: List<Triple<String, String, String>> = UsingHelper.getUsingUrlAndVersion(library.usings)
+            val usingDefs = UsingHelper.getUsingUrlAndVersion(library.usings)
 
             require(usingDefs.size <= 1)
             { "Evaluation of Measure using multiple Models is not supported at this time." }
@@ -340,6 +539,21 @@ class CqlExecutionController(
             "FhirBundleCursor" -> return "Retrieve"
         }
         return type
+    }
+
+    private inline fun <reified T> Parameters.getValue(name: String): T? {
+        if (parameter != null) {
+            val parametersParameter = parameter!!.find { parameter ->
+                name == parameter.name.value
+            }
+            return when (T::class.java) {
+                StringType::class.java -> parametersParameter?.valueString as T
+                Endpoint::class.java -> parametersParameter?.resource as T
+                BooleanType::class.java -> parametersParameter?.valueBoolean as T
+                else -> null
+            }
+        }
+        return null
     }
 
     companion object {
