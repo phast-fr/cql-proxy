@@ -46,7 +46,7 @@ dependencies {
 
     implementation("fr.phast:phast-fhir-kt:0.0.10-SNAPSHOT")
     implementation("fr.phast:cql-engine-fhir:0.0.9-SNAPSHOT")
-    implementation("fr.phast:cql-services:0.0.12-SNAPSHOT")
+    implementation("fr.phast:cql-services:0.0.13-SNAPSHOT")
 }
 
 tasks.withType<KotlinCompile> {
