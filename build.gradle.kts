@@ -38,15 +38,17 @@ dependencies {
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 
+    implementation("org.springframework.boot:spring-boot-starter-cache")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
+    implementation("com.github.ben-manes.caffeine:caffeine")
 
     implementation("info.cqframework:cql-to-elm:1.5.4")
     implementation("org.opencds.cqf.cql:engine:1.5.2")
 
     implementation("fr.phast:phast-fhir-kt:0.0.10-SNAPSHOT")
     implementation("fr.phast:cql-engine-fhir:0.0.9-SNAPSHOT")
-    implementation("fr.phast:cql-services:0.0.13-SNAPSHOT")
+    implementation("fr.phast:cql-services:0.0.16-SNAPSHOT")
 }
 
 tasks.withType<KotlinCompile> {

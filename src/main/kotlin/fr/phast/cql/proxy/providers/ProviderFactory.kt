@@ -28,16 +28,18 @@ import fr.phast.cql.engine.fhir.helper.FHIRHelpers
 import fr.phast.cql.engine.fhir.model.R4FhirModelResolver
 import fr.phast.cql.engine.fhir.retrieve.R4FhirRetrieveProvider
 import fr.phast.cql.engine.fhir.terminology.R4FhirTerminologyProvider
+import fr.phast.cql.services.decorators.CacheAwareTerminologyDecorator
 import fr.phast.cql.services.providers.EvaluationProviderFactory
 import org.hl7.fhir.r4.model.Endpoint
 import org.opencds.cqf.cql.engine.data.CompositeDataProvider
 import org.opencds.cqf.cql.engine.data.DataProvider
 import org.opencds.cqf.cql.engine.data.ExternalFunctionProvider
+import org.opencds.cqf.cql.engine.runtime.Code
 import org.opencds.cqf.cql.engine.terminology.TerminologyProvider
 import org.springframework.stereotype.Component
 
 @Component
-class ProviderFactory: EvaluationProviderFactory {
+class ProviderFactory(private val terminologyCache: MutableMap<String, Iterable<Code>>): EvaluationProviderFactory {
 
     override fun createDataProvider(
         model: String,
@@ -76,7 +78,7 @@ class ProviderFactory: EvaluationProviderFactory {
     ): TerminologyProvider {
         if (model == "FHIR" && version.startsWith("4")) {
             if (uri.isNotEmpty()) {
-                return R4FhirTerminologyProvider(uri, credential)
+                return CacheAwareTerminologyDecorator(R4FhirTerminologyProvider(uri, credential), terminologyCache)
             }
             throw IllegalArgumentException("Can't construct a terminology provider with empty URI")
         }

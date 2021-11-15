@@ -24,18 +24,38 @@
 
 package fr.phast.cql.proxy.configurations
 
+import com.github.benmanes.caffeine.cache.Caffeine
 import fr.phast.cql.services.LibraryService
 import org.cqframework.cql.cql2elm.CqlTranslatorOptions
 import org.cqframework.cql.cql2elm.model.Model
 import org.cqframework.cql.elm.execution.Library
 import org.cqframework.cql.elm.execution.VersionedIdentifier
+import org.opencds.cqf.cql.engine.runtime.Code
+import org.springframework.cache.CacheManager
+import org.springframework.cache.caffeine.CaffeineCacheManager
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Lazy
+import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 
 @Configuration
 open class CQLConfig {
+
+    @Bean
+    open fun caffeineConfig(): Caffeine<Any, Any> {
+        return Caffeine
+            .newBuilder()
+            .expireAfterWrite(60, TimeUnit.MINUTES)
+    }
+
+    @Bean
+    open fun cacheManager(caffeine: Caffeine<Any, Any>): CacheManager {
+        return CaffeineCacheManager().also {
+            it.setCaffeine(caffeine)
+        }
+    }
 
     @Bean(name = ["globalModelCache"])
     open fun globalModelCache(): MutableMap<org.hl7.elm.r1.VersionedIdentifier, Model> {
@@ -45,6 +65,16 @@ open class CQLConfig {
     @Bean(name = ["globalLibraryCache"])
     open fun globalLibraryCache(): MutableMap<VersionedIdentifier, Library> {
         return ConcurrentHashMap()
+    }
+
+    @Bean(name = ["globalTerminologyCache"])
+    open fun terminologyCache(): Map<String, Iterable<Code>> {
+        val cache = Caffeine
+            .newBuilder()
+            .maximumSize(100)
+            .expireAfterAccess(Duration.ofMinutes(60))
+            .build<String, Iterable<Code>>()
+        return cache.asMap()
     }
 
     @Lazy
