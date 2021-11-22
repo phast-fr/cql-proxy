@@ -4,10 +4,10 @@ val ossrhUsername: String by project
 val ossrhPassword: String by project
 
 plugins {
-    id("org.springframework.boot") version "2.5.6"
+    id("org.springframework.boot") version "2.6.0"
     id("io.spring.dependency-management") version "1.0.11.RELEASE"
-    kotlin("jvm") version "1.5.31"
-    kotlin("plugin.spring") version "1.5.31"
+    kotlin("jvm") version "1.6.0"
+    kotlin("plugin.spring") version "1.6.0"
     id("java-library")
     id("maven-publish")
     id("signing")
@@ -25,10 +25,12 @@ configurations {
 
 repositories {
     mavenCentral()
-    maven {
-        url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots")
-    }
+    maven { url = uri("https://repo.spring.io/milestone") }
+    maven { url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots") }
 }
+
+extra["springBootAdminVersion"] = "2.4.3"
+extra["springCloudVersion"] = "2021.0.0-RC1"
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -41,14 +43,23 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-cache")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
+    implementation("org.springframework.cloud:spring-cloud-sleuth-zipkin")
+    implementation("org.springframework.cloud:spring-cloud-starter-netflix-eureka-client")
     implementation("com.github.ben-manes.caffeine:caffeine")
 
     implementation("info.cqframework:cql-to-elm:1.5.4")
     implementation("org.opencds.cqf.cql:engine:1.5.2")
 
     implementation("fr.phast:phast-fhir-kt:0.0.10-SNAPSHOT")
-    implementation("fr.phast:cql-engine-fhir:0.0.9-SNAPSHOT")
-    implementation("fr.phast:cql-services:0.0.16-SNAPSHOT")
+    implementation("fr.phast:cql-engine-fhir:0.0.10-SNAPSHOT")
+    implementation("fr.phast:cql-services:0.0.17-SNAPSHOT")
+}
+
+dependencyManagement {
+    imports {
+        mavenBom("de.codecentric:spring-boot-admin-dependencies:${property("springBootAdminVersion")}")
+        mavenBom("org.springframework.cloud:spring-cloud-dependencies:${property("springCloudVersion")}")
+    }
 }
 
 tasks.withType<KotlinCompile> {
