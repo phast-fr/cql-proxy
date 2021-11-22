@@ -1,9 +1,19 @@
 server:
-  error:
-    include-binding-errors: always
-    include-message: always
-    include-stacktrace: on_param
-    include-exception: true
+  port: 9205
 spring:
+  application:
+    name: cql-proxy
   jackson:
     default-property-inclusion: non_null
+eureka:
+  instance:
+    hostname: ${spring.application.name}
+    health-check-url-path: /actuator/health
+  client:
+    service-url:
+      defaultZone: http://discovery:9102/eureka/
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
