@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.springframework.boot") version "2.6.4"
+    id("org.springframework.boot") version "2.6.6"
     id("io.spring.dependency-management") version "1.0.11.RELEASE"
     kotlin("jvm") version "1.6.10"
     kotlin("plugin.spring") version "1.6.10"
@@ -44,7 +44,7 @@ dependencies {
     implementation("org.opencds.cqf.cql:engine:1.5.2")
 
     implementation("fr.phast:phast-fhir-kt:0.0.10-SNAPSHOT")
-    implementation("fr.phast:cql-engine-fhir:0.0.13-SNAPSHOT")
+    implementation("fr.phast:cql-engine-fhir:0.0.19-SNAPSHOT")
     implementation("fr.phast:cql-services:0.0.17-SNAPSHOT")
 }
 
