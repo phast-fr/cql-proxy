@@ -5,13 +5,15 @@ spring:
     name: cql-proxy
   jackson:
     default-property-inclusion: non_null
+  zipkin:
+    base-url: http://zipkin:9411
 eureka:
   instance:
     hostname: ${spring.application.name}
     health-check-url-path: /actuator/health
   client:
     service-url:
-      defaultZone: http://discovery:9102/eureka/
+      defaultZone: http://discovery.edge-service:9102/eureka/
 management:
   endpoints:
     web:
