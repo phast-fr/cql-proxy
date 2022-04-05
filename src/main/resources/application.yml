@@ -6,14 +6,13 @@ spring:
   jackson:
     default-property-inclusion: non_null
   zipkin:
-    base-url: http://zipkin:9411
+    enabled: false
 eureka:
   instance:
     hostname: ${spring.application.name}
     health-check-url-path: /actuator/health
   client:
-    service-url:
-      defaultZone: http://discovery.edge-service:9102/eureka/
+    enabled: false
 management:
   endpoints:
     web:
