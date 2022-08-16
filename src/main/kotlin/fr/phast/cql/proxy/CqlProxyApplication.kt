@@ -30,7 +30,7 @@ import org.springframework.boot.runApplication
 
 @ConfigurationPropertiesScan
 @SpringBootApplication
-open class CqlProxyApplication
+class CqlProxyApplication
 
 fun main(args: Array<String>) {
     runApplication<CqlProxyApplication>(*args)
