@@ -1,8 +1,8 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.springframework.boot") version "2.6.10"
-    id("io.spring.dependency-management") version "1.0.12.RELEASE"
+    id("org.springframework.boot") version "2.6.11"
+    id("io.spring.dependency-management") version "1.0.13.RELEASE"
     kotlin("jvm") version "1.6.21"
     kotlin("plugin.spring") version "1.6.21"
 }
@@ -39,7 +39,7 @@ dependencies {
     implementation("org.springframework.cloud:spring-cloud-starter-netflix-eureka-client")
     implementation("com.github.ben-manes.caffeine:caffeine")
 
-    implementation("fr.phast:cql-services:0.0.22-SNAPSHOT")
+    implementation("fr.phast:cql-services:0.0.25-SNAPSHOT")
 
     developmentOnly("org.springframework.boot:spring-boot-devtools")
 }
