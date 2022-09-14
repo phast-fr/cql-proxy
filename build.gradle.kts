@@ -39,7 +39,7 @@ dependencies {
     implementation("org.springframework.cloud:spring-cloud-starter-netflix-eureka-client")
     implementation("com.github.ben-manes.caffeine:caffeine")
 
-    implementation("fr.phast:cql-services:0.0.34-SNAPSHOT")
+    implementation("fr.phast:cql-services:0.0.36-SNAPSHOT")
 
     developmentOnly("org.springframework.boot:spring-boot-devtools")
 }
